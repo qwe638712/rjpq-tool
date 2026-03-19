@@ -4,37 +4,45 @@ const http = require('http').Server(app);
 const io = require('socket.io')(http);
 const path = require('path');
 
-// 儲存房間狀態：{ 樓層: 選中的數字 }
+// 儲存狀態：{ floor: { tile: 數字, color: 顏色 } }
 let gameState = {};
 
-// 提供靜態檔案
+// 預設四種顏色
+const PLAYER_COLORS = ['#e74c3c', '#3498db', '#f1c40f', '#9b59b6']; // 紅, 藍, 黃, 紫
+let colorIndex = 0;
+
 app.use(express.static(__dirname));
 
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
-});
-
-// Socket.io 邏輯
 io.on('connection', (socket) => {
-    // 玩家連線時，發送當前進度
+    // 分配一個固定顏色給這位玩家
+    const myColor = PLAYER_COLORS[colorIndex % PLAYER_COLORS.length];
+    colorIndex++;
+    socket.emit('assignColor', myColor);
+
+    // 發送目前進度
     socket.emit('sync', gameState);
 
-    // 接收點擊事件
     socket.on('click', (data) => {
-        // data 格式: { floor: 1, tile: 3 }
-        gameState[data.floor] = data.tile;
-        // 廣播給所有人 (包含自己)
+        const { floor, tile, color } = data;
+
+        // 如果點擊的是「已經被選中」的格子，則取消選取 (Toggle 功能)
+        if (gameState[floor] && gameState[floor].tile === tile) {
+            delete gameState[floor];
+        } else {
+            // 更新該層為此人的顏色與數字
+            gameState[floor] = { tile, color };
+        }
+        
         io.emit('sync', gameState);
     });
 
-    // 清除按鈕 (選擇性功能)
     socket.on('reset', () => {
         gameState = {};
         io.emit('sync', gameState);
     });
 });
 
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 http.listen(PORT, '0.0.0.0', () => {
-    console.log(`伺服器運作中: http://localhost:${PORT}`);
+    console.log(`Server running on port ${PORT}`);
 });
