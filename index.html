@@ -1,72 +1,213 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>RJPQ 4人同步工具</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RJPQ 多人即時同步工具</title>
     <script src="/socket.io/socket.io.js"></script>
     <style>
-        body { font-family: sans-serif; background: #f4f4f4; display: flex; flex-direction: column; align-items: center; }
-        .container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-top: 20px; }
-        .row { display: flex; align-items: center; border-bottom: 1px solid #eee; padding: 5px 0; flex-direction: row; }
-        .floor-name { width: 60px; font-weight: bold; color: #666; }
-        .tiles { display: flex; gap: 10px; }
-        .tile { 
-            width: 50px; height: 50px; border: 2px solid #ccc; border-radius: 5px;
-            display: flex; align-items: center; justify-content: center;
-            cursor: pointer; font-size: 1.2em; transition: 0.2s;
+        :root {
+            --bg-color: #f0f2f5;
+            --card-bg: #ffffff;
+            --text-main: #333;
+            --border-color: #ddd;
         }
-        .tile:hover { background: #f0f0f0; }
-        .tile.active { background: #2ecc71; color: white; border-color: #27ae60; }
-        #board { display: flex; flex-direction: column-reverse; } /* 讓第一層在下面 */
+
+        body {
+            font-family: "Microsoft JhengHei", sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            color: var(--text-main);
+        }
+
+        h1 { margin-bottom: 10px; color: #2c3e50; }
+
+        .info-panel {
+            background: var(--card-bg);
+            padding: 15px 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        #my-status {
+            display: inline-block;
+            padding: 8px 20px;
+            border-radius: 20px;
+            color: white;
+            font-weight: bold;
+            margin-bottom: 10px;
+            transition: 0.3s;
+            background-color: #95a5a6; /* 初始灰色 */
+        }
+
+        .controls { margin-top: 10px; }
+        
+        button {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 5px;
+            background: #e74c3c;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover { background: #c0392b; }
+
+        /* 棋盤樣式 */
+        .board-container {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        #board {
+            display: flex;
+            flex-direction: column-reverse; /* 讓第一層在最下面符合遊戲體感 */
+        }
+
+        .floor-row {
+            display: flex;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .floor-row:last-child { border-bottom: none; }
+
+        .floor-label {
+            width: 70px;
+            font-weight: bold;
+            color: #7f8c8d;
+        }
+
+        .tiles { display: flex; gap: 12px; }
+
+        .tile {
+            width: 55px;
+            height: 55px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background-color: white;
+            user-select: none;
+        }
+
+        .tile:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
     </style>
 </head>
 <body>
-    <h1>RJPQ 同步面板</h1>
-    <div class="container">
-        <div id="board"></div>
+
+    <div class="info-panel">
+        <h1>RJPQ 隊伍面板</h1>
+        <div id="my-status">正在連線至伺服器...</div>
+        <div class="controls">
+            <button onclick="resetBoard()">一鍵清空所有樓層</button>
+        </div>
+    </div>
+
+    <div class="board-container">
+        <div id="board">
+            </div>
     </div>
 
     <script>
         const socket = io();
-        const board = document.getElementById('board');
-        const TOTAL_FLOORS = 10; // 總層數
+        let myColor = '';
+        const TOTAL_FLOORS = 10; // 可以根據需求改為更多層
+        const TILES_PER_FLOOR = 4;
 
-        // 產生 UI
+        // 1. 初始化棋盤 UI
+        const boardEl = document.getElementById('board');
         for (let f = 1; f <= TOTAL_FLOORS; f++) {
             const row = document.createElement('div');
-            row.className = 'row';
+            row.className = 'floor-row';
             
-            const name = document.createElement('div');
-            name.className = 'floor-name';
-            name.innerText = 'F' + f;
-            row.appendChild(name);
+            const label = document.createElement('div');
+            label.className = 'floor-label';
+            label.innerText = `F ${f}`;
+            row.appendChild(label);
 
             const tilesDiv = document.createElement('div');
             tilesDiv.className = 'tiles';
 
-            for (let t = 1; t <= 4; t++) { // 每層 4 個數字
+            for (let t = 1; t <= TILES_PER_FLOOR; t++) {
                 const btn = document.createElement('div');
                 btn.className = 'tile';
-                btn.id = 'f' + f + '-' + t;
+                btn.id = `f${f}-${t}`;
                 btn.innerText = t;
-                btn.onclick = () => socket.emit('click', { floor: f, tile: t });
+                
+                // 點擊事件
+                btn.onclick = () => {
+                    socket.emit('click', { floor: f, tile: t, color: myColor });
+                };
+                
                 tilesDiv.appendChild(btn);
             }
             row.appendChild(tilesDiv);
-            board.appendChild(row);
+            boardEl.appendChild(row);
         }
 
-        // 監聽伺服器同步訊號
+        // 2. 接收伺服器分配的玩家顏色
+        socket.on('assignColor', (color) => {
+            myColor = color;
+            const statusBox = document.getElementById('my-status');
+            statusBox.style.backgroundColor = color;
+            statusBox.innerText = `你是 ${getColorName(color)} 隊員`;
+        });
+
+        // 3. 監聽同步狀態
         socket.on('sync', (state) => {
-            // 先全部重置顏色
-            document.querySelectorAll('.tile').forEach(el => el.classList.remove('active'));
-            // 根據 state 上色
+            // 先將所有格子恢復原狀
+            document.querySelectorAll('.tile').forEach(el => {
+                el.style.backgroundColor = 'white';
+                el.style.color = '#333';
+                el.style.borderColor = '#ddd';
+            });
+
+            // 根據 state 資料上色
             for (let floor in state) {
-                const tileNum = state[floor];
-                const target = document.getElementById('f' + floor + '-' + tileNum);
-                if (target) target.classList.add('active');
+                const data = state[floor]; // 格式: { tile: 2, color: '#xxxxxx' }
+                const target = document.getElementById(`f${floor}-${data.tile}`);
+                if (target) {
+                    target.style.backgroundColor = data.color;
+                    target.style.borderColor = data.color;
+                    target.style.color = 'white';
+                }
             }
         });
+
+        // 重置功能
+        function resetBoard() {
+            if (confirm('確定要清空目前所有進度嗎？')) {
+                socket.emit('reset');
+            }
+        }
+
+        // 簡單的顏色名稱轉換 (輔助 UI)
+        function getColorName(hex) {
+            const names = {
+                '#e74c3c': '紅色',
+                '#3498db': '藍色',
+                '#f1c40f': '黃色',
+                '#9b59b6': '紫色'
+            };
+            return names[hex] || '未知';
+        }
     </script>
 </body>
 </html>
