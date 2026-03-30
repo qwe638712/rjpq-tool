@@ -9,7 +9,7 @@ const PLAYER_COLORS = ['#e74c3c', '#3498db', '#f1c40f', '#9b59b6']; // 紅, 藍,
 
 app.use(express.static(__dirname));
 
-// 廣播房間人數給大廳
+// 廣播全房間人數給大廳
 function broadcastRoomCounts() {
     let counts = {};
     for (let i = 1; i <= 10; i++) {
@@ -28,9 +28,9 @@ io.on('connection', (socket) => {
         const clients = io.sockets.adapter.rooms.get(roomStr);
         const currentCount = clients ? clients.size : 0;
 
-        // 限制 4 人
+        // 限制 4 人進入
         if (currentCount >= 4) {
-            socket.emit('errorMsg', '該包廂已滿座，請選擇其他包廂！');
+            socket.emit('errorMsg', '該包廂已滿座（限4人），請選擇其他包廂！');
             return;
         }
 
@@ -40,7 +40,7 @@ io.on('connection', (socket) => {
 
         if (!roomsState[roomStr]) roomsState[roomStr] = {};
 
-        // 分配顏色
+        // 分配不重複的顏色
         const usedColors = [];
         const roomClients = io.sockets.adapter.rooms.get(roomStr);
         roomClients.forEach(id => {
@@ -96,4 +96,4 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 3000;
-http.listen(PORT, '0.0.0.0', () => console.log(`Club open on port ${PORT}`));
+http.listen(PORT, '0.0.0.0', () => console.log(`Server on port ${PORT}`));
