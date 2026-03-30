@@ -7,38 +7,18 @@
     <script src="/socket.io/socket.io.js"></script>
     <style>
         :root { --primary: #9b59b6; --gold: #f1c40f; --danger: #d63031; --neon-pink: #e84393; }
-
-        /* 關鍵修正：將圖片設為背景，且不允許被推開 */
+        
         body { 
             font-family: "Microsoft JhengHei", sans-serif; margin: 0; display: flex; flex-direction: column; align-items: center; padding: 10px; color: white; min-height: 100vh;
-            background-image: url('background.png'); /* 這裡換成你的圖檔名 */
-            background-size: cover; 
-            background-position: center; 
-            background-attachment: fixed;
-            background-repeat: no-repeat;
-            background-color: #000;
+            background-image: url('background.png'); 
+            background-size: cover; background-position: center; background-attachment: fixed; background-repeat: no-repeat; background-color: #000;
         }
 
-        /* 確保面板浮在最上層 */
-        .glass-panel { 
-            position: relative; 
-            z-index: 100; 
-            background: rgba(0, 0, 0, 0.85); 
-            backdrop-filter: blur(10px); 
-            border-radius: 20px; 
-            box-shadow: 0 10px 40px rgba(0,0,0,0.8); 
-            border: 1px solid rgba(255,255,255,0.2); 
-            padding: 15px; 
-            width: 92%; 
-            max-width: 400px; 
-            text-align: center; 
-            margin-top: 10px; 
-        }
-
+        .glass-panel { position: relative; z-index: 100; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(10px); border-radius: 20px; border: 1px solid rgba(255,255,255,0.2); padding: 15px; width: 92%; max-width: 400px; text-align: center; margin-top: 10px; }
         .title-neon { font-size: 1.8rem; color: #fff; text-shadow: 0 0 15px var(--primary); animation: glow 2s infinite alternate; }
         @keyframes glow { from { text-shadow: 0 0 10px var(--primary); } to { text-shadow: 0 0 30px var(--primary); } }
 
-        /* 房間清單 */
+        /* 房間管理 */
         .room-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 15px; }
         .room-btn { padding: 12px 5px; border-radius: 12px; cursor: pointer; font-weight: bold; background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2); transition: 0.3s; }
         .room-btn span { display: block; font-size: 0.7rem; color: var(--gold); }
@@ -47,19 +27,19 @@
 
         /* 棋盤 */
         #game-screen { display: none; width: 100%; flex-direction: column; align-items: center; z-index: 100; position: relative; }
-        .floor-row { display: flex; align-items: center; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.1); width: 100%; }
-        .floor-label { width: 40px; font-weight: bold; color: var(--gold); font-size: 0.8rem; }
+        .floor-row { display: flex; align-items: center; padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.1); width: 100%; }
+        .floor-label { width: 45px; font-weight: bold; color: var(--gold); font-size: 0.9rem; }
         .tiles { display: flex; gap: 8px; flex: 1; justify-content: space-around; }
-        .tile { width: 45px; height: 45px; border: 1px solid rgba(255,255,255,0.3); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: bold; cursor: pointer; background: rgba(255,255,255,0.1); }
+        .tile { width: 48px; height: 48px; border: 1px solid rgba(255,255,255,0.3); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; font-weight: bold; cursor: pointer; background: rgba(255,255,255,0.1); }
 
         /* 音樂控制項 */
         #youtube-player { display: none; }
-        .music-group { position: fixed; bottom: 30px; right: 20px; display: flex; gap: 12px; z-index: 99999; }
-        .m-btn { width: 55px; height: 55px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px solid white; font-size: 24px; box-shadow: 0 4px 15px rgba(0,0,0,0.6); }
+        .music-group { position: fixed; bottom: 30px; right: 20px; display: flex; gap: 12px; z-index: 10000; }
+        .m-btn { width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 3px solid white; font-size: 26px; box-shadow: 0 4px 15px rgba(0,0,0,0.6); transition: 0.2s; }
         #music-toggle { background: linear-gradient(135deg, #6c5ce7, #a29bfe); }
-        #music-next { background: linear-gradient(135deg, var(--neon-pink), #fd79a8); font-size: 18px; display: none; }
-        .playing { animation: rotate 2s linear infinite; box-shadow: 0 0 20px var(--neon-pink) !important; }
-        @keyframes rotate { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        #music-next { background: linear-gradient(135deg, var(--neon-pink), #fd79a8); font-size: 20px; display: none; }
+        .playing { animation: rotate 3s linear infinite; box-shadow: 0 0 25px var(--neon-pink) !important; }
+        @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
         #reset-overlay { display: none; position: fixed; top: 20px; background: var(--danger); color: white; padding: 10px 25px; border-radius: 50px; font-weight: bold; z-index: 50000; border: 2px solid white; }
     </style>
@@ -82,11 +62,11 @@
     </div>
 
     <div id="game-screen">
-        <div class="glass-panel" style="margin-bottom:10px;">
+        <div class="glass-panel" style="margin-bottom:10px; position:relative;">
             <button onclick="location.reload()" style="position:absolute; left:10px; top:10px; background:rgba(255,255,255,0.2); border:1px solid #fff; color:white; border-radius:5px; padding:3px 8px; font-size: 10px; cursor: pointer;">離開</button>
-            <div id="room-display" style="color:var(--gold); font-weight:bold;"></div>
-            <div id="my-status" style="margin-top:5px; display:inline-block; padding:5px 15px; border-radius:15px; border:1px solid #fff;">連線中...</div>
-            <button id="reset-btn" onclick="handleReset()" style="background:rgba(214,48,49,0.3); border:1px solid var(--danger); color:#ff7675; padding:5px; border-radius:8px; width:100%; margin-top:10px; font-weight:bold;">清空包廂</button>
+            <div id="room-display" style="color:var(--gold); font-weight:bold; font-size: 1.2rem;"></div>
+            <div id="my-status" style="margin-top:5px; display:inline-block; padding:5px 15px; border-radius:15px; border:1px solid #fff; font-weight:bold;">連線中...</div>
+            <button id="reset-btn" onclick="handleReset()" style="background:rgba(214,48,49,0.3); border:1px solid var(--danger); color:#ff7675; padding:8px; border-radius:8px; width:100%; margin-top:10px; font-weight:bold;">清空包廂</button>
         </div>
         <div class="glass-panel" style="padding: 10px;">
             <div id="board" style="display:flex; flex-direction:column-reverse;"></div>
@@ -97,9 +77,9 @@
     <script>
         const socket = io();
         const roomNames = ["燈紅酒綠", "酒池肉林", "紙醉金迷", "花天酒地", "歌舞昇平", "醉生夢死", "春宵苦短", "露水姻緣", "活色生香", "翻雲覆雨"];
-        let myColor = '', currentRoomId = null, isCounting = false;
+        let myColor = '', currentRoomId = null;
 
-        // --- 音樂控制 ---
+        // --- 音樂邏輯修復 ---
         let player, isPlaying = false, currentTrack = 0;
         const playlist = ['yupEwQ6qCd0', '4Gv_hF7UuO8', 'hCh8H60UshM', 'z_D8S6WkFfM', 'p_p6_qjL7yM', 'r6S_9unvV6M'];
 
@@ -107,7 +87,9 @@
             player = new YT.Player('youtube-player', {
                 height: '0', width: '0', videoId: playlist[currentTrack],
                 playerVars: { 'autoplay': 0, 'controls': 0, 'rel': 0 },
-                events: { 'onStateChange': (e) => { if(e.data === YT.PlayerState.ENDED) nextTrack(); } }
+                events: { 
+                    'onStateChange': (e) => { if(e.data === YT.PlayerState.ENDED) nextTrack(); }
+                }
             });
         }
 
@@ -115,10 +97,12 @@
             const tBtn = document.getElementById('music-toggle');
             const nBtn = document.getElementById('music-next');
             if (!isPlaying) {
-                player.playVideo(); tBtn.classList.add('playing'); tBtn.innerText = '💿';
+                player.playVideo();
+                tBtn.classList.add('playing'); tBtn.innerText = '💿';
                 nBtn.style.display = 'flex'; isPlaying = true;
             } else {
-                player.pauseVideo(); tBtn.classList.remove('playing'); tBtn.innerText = '🎵';
+                player.pauseVideo();
+                tBtn.classList.remove('playing'); tBtn.innerText = '🎵';
                 nBtn.style.display = 'none'; isPlaying = false;
             }
         }
@@ -126,7 +110,13 @@
         function nextTrack() {
             if (!isPlaying) return;
             currentTrack = (currentTrack + 1) % playlist.length;
+            // 重要：使用 loadVideoById 並緊接 playVideo() 確保觸發播放
             player.loadVideoById(playlist[currentTrack]);
+            setTimeout(() => { player.playVideo(); }, 300); 
+            
+            const nBtn = document.getElementById('music-next');
+            nBtn.style.transform = "scale(0.8)";
+            setTimeout(() => nBtn.style.transform = "scale(1)", 100);
         }
 
         // --- 房間管理 ---
@@ -137,7 +127,7 @@
                 const btn = document.createElement('button');
                 btn.className = 'room-btn' + (count >= 4 ? ' full' : (count > 0 ? ' has-people' : ''));
                 btn.innerHTML = `<span>VIP ROOM ${rid}</span>${name}<br><small>👤 ${count}/4</small>`;
-                btn.onclick = () => { if (count >= 4) return alert('包廂客滿！'); socket.emit('joinRoom', rid); };
+                btn.onclick = () => { if (count >= 4) return alert('包廂客滿囉！'); socket.emit('joinRoom', rid); };
                 grid.appendChild(btn);
             });
         });
