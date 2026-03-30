@@ -26,13 +26,14 @@ io.on('connection', (socket) => {
         const roomStr = roomId.toString();
         const clients = io.sockets.adapter.rooms.get(roomStr);
         if (clients && clients.size >= 4) {
-            socket.emit('errorMsg', '該包廂已滿座！');
+            socket.emit('errorMsg', '該包廂已滿座（限4人）！');
             return;
         }
         if (currentRoom) socket.leave(currentRoom);
         currentRoom = roomStr;
         socket.join(roomStr);
         if (!roomsState[roomStr]) roomsState[roomStr] = {};
+        
         const usedColors = [];
         const roomClients = io.sockets.adapter.rooms.get(roomStr);
         roomClients.forEach(id => {
@@ -62,8 +63,9 @@ io.on('connection', (socket) => {
 
     socket.on('requestReset', () => {
         if (!currentRoom) return;
-        if (resetTimers[currentRoom]) { executeReset(currentRoom); }
-        else {
+        if (resetTimers[currentRoom]) {
+            executeReset(currentRoom);
+        } else {
             let timeLeft = 60;
             io.to(currentRoom).emit('resetCounting', timeLeft);
             resetTimers[currentRoom] = setInterval(() => {
@@ -84,4 +86,4 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 3000;
-http.listen(PORT, '0.0.0.0', () => console.log(`Server on ${PORT}`));
+http.listen(PORT, '0.0.0.0', () => console.log(`Server running on port ${PORT}`));
