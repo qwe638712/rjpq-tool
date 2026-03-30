@@ -2,62 +2,98 @@ const express = require('express');
 const app = express();
 const http = require('http').Server(app);
 const io = require('socket.io')(http);
-const path = require('path');
 
-// 儲存所有格子的狀態，格式為 {"f1-t1": "#hexColor", "f2-t3": "#hexColor"}
-let gameState = {};
-
-// 定義四位玩家的代表色：紅、藍、黃、紫
-const PLAYER_COLORS = ['#e74c3c', '#3498db', '#f1c40f', '#9b59b6'];
-let colorIndex = 0;
+let roomsState = {}; 
+let resetTimers = {};
+const PLAYER_COLORS = ['#e74c3c', '#3498db', '#f1c40f', '#9b59b6']; // 紅, 藍, 黃, 紫
 
 app.use(express.static(__dirname));
 
-// 路由設定
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
-});
+// 廣播房間人數給大廳
+function broadcastRoomCounts() {
+    let counts = {};
+    for (let i = 1; i <= 10; i++) {
+        const clients = io.sockets.adapter.rooms.get(i.toString());
+        counts[i] = clients ? clients.size : 0;
+    }
+    io.emit('roomCountsUpdate', counts);
+}
 
-// Socket.io 通訊邏輯
 io.on('connection', (socket) => {
-    // 1. 分配顏色給新連線的玩家
-    const myColor = PLAYER_COLORS[colorIndex % PLAYER_COLORS.length];
-    colorIndex++;
-    socket.emit('assignColor', myColor);
+    let currentRoom = null;
+    broadcastRoomCounts();
 
-    // 2. 發送目前盤面狀態給新玩家
-    socket.emit('sync', gameState);
+    socket.on('joinRoom', (roomId) => {
+        const roomStr = roomId.toString();
+        const clients = io.sockets.adapter.rooms.get(roomStr);
+        const currentCount = clients ? clients.size : 0;
 
-    // 3. 處理點擊事件
+        // 限制 4 人
+        if (currentCount >= 4) {
+            socket.emit('errorMsg', '該包廂已滿座，請選擇其他包廂！');
+            return;
+        }
+
+        if (currentRoom) socket.leave(currentRoom);
+        currentRoom = roomStr;
+        socket.join(roomStr);
+
+        if (!roomsState[roomStr]) roomsState[roomStr] = {};
+
+        // 分配顏色
+        const usedColors = [];
+        const roomClients = io.sockets.adapter.rooms.get(roomStr);
+        roomClients.forEach(id => {
+            const s = io.sockets.sockets.get(id);
+            if (s && s.myColor) usedColors.push(s.myColor);
+        });
+        socket.myColor = PLAYER_COLORS.find(c => !usedColors.includes(c)) || PLAYER_COLORS[0];
+
+        socket.emit('joinSuccess', { roomId, myColor: socket.myColor, state: roomsState[roomStr] });
+        broadcastRoomCounts();
+    });
+
     socket.on('click', (data) => {
+        if (!currentRoom) return;
         const { floor, tile, color } = data;
         const key = `f${floor}-${tile}`;
-
-        // 如果這格已經是「我的顏色」，就取消選取 (變回白色)
-        // 如果這格是空的或是別人的顏色，就標記為我的顏色
-        if (gameState[key] === color) {
-            delete gameState[key];
-        } else {
-            gameState[key] = color;
-        }
+        if (roomsState[currentRoom][key] && roomsState[currentRoom][key] !== color) return;
         
-        // 廣播最新狀態給所有人
-        io.emit('sync', gameState);
+        let isCancel = false;
+        for (let k in roomsState[currentRoom]) {
+            if (k.startsWith(`f${floor}-`) && roomsState[currentRoom][k] === color) {
+                if (k === key) isCancel = true;
+                delete roomsState[currentRoom][k];
+            }
+        }
+        if (!isCancel) roomsState[currentRoom][key] = color;
+        io.to(currentRoom).emit('sync', roomsState[currentRoom]);
     });
 
-    // 4. 處理重置事件
-    socket.on('reset', () => {
-        gameState = {};
-        io.emit('sync', gameState);
+    socket.on('requestReset', () => {
+        if (!currentRoom) return;
+        if (resetTimers[currentRoom]) {
+            executeReset(currentRoom);
+        } else {
+            let timeLeft = 60;
+            io.to(currentRoom).emit('resetCounting', timeLeft);
+            resetTimers[currentRoom] = setInterval(() => {
+                timeLeft--;
+                if (timeLeft <= 0) executeReset(currentRoom);
+                else io.to(currentRoom).emit('resetCounting', timeLeft);
+            }, 1000);
+        }
     });
 
-    socket.on('disconnect', () => {
-        console.log('一位玩家已離線');
-    });
+    function executeReset(rid) {
+        if (resetTimers[rid]) { clearInterval(resetTimers[rid]); delete resetTimers[rid]; }
+        roomsState[rid] = {};
+        io.to(rid).emit('sync', {});
+        io.to(rid).emit('resetFinished');
+    }
+
+    socket.on('disconnect', () => { setTimeout(broadcastRoomCounts, 500); });
 });
 
-// 自動偵測環境變數 Port (Render 專用)
 const PORT = process.env.PORT || 3000;
-http.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server is running on port ${PORT}`);
-});
+http.listen(PORT, '0.0.0.0', () => console.log(`Club open on port ${PORT}`));
