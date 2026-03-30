@@ -5,11 +5,10 @@ const io = require('socket.io')(http);
 
 let roomsState = {}; 
 let resetTimers = {};
-const PLAYER_COLORS = ['#e74c3c', '#3498db', '#f1c40f', '#9b59b6']; // 紅, 藍, 黃, 紫
+const PLAYER_COLORS = ['#e74c3c', '#3498db', '#f1c40f', '#9b59b6']; // 分配給四名使用者的顏色
 
 app.use(express.static(__dirname));
 
-// 廣播各房間人數給大廳
 function broadcastRoomCounts() {
     let counts = {};
     for (let i = 1; i <= 10; i++) {
@@ -28,9 +27,9 @@ io.on('connection', (socket) => {
         const clients = io.sockets.adapter.rooms.get(roomStr);
         const currentCount = clients ? clients.size : 0;
 
-        // 限制 4 人
+        // 限制每個包廂最多 4 人
         if (currentCount >= 4) {
-            socket.emit('errorMsg', '該包廂已滿座（限4人），請選擇其他包廂！');
+            socket.emit('errorMsg', '該包廂已滿座（限4人）！');
             return;
         }
 
@@ -40,7 +39,7 @@ io.on('connection', (socket) => {
 
         if (!roomsState[roomStr]) roomsState[roomStr] = {};
 
-        // 分配顏色
+        // 自動分配顏色
         const usedColors = [];
         const roomClients = io.sockets.adapter.rooms.get(roomStr);
         roomClients.forEach(id => {
@@ -96,4 +95,4 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 3000;
-http.listen(PORT, '0.0.0.0', () => console.log(`Club server running on port ${PORT}`));
+http.listen(PORT, '0.0.0.0', () => console.log(`NanMoCLB server running on port ${PORT}`));
