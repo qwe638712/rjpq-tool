@@ -7,42 +7,33 @@
     <script src="/socket.io/socket.io.js"></script>
     <style>
         :root { --primary: #9b59b6; --gold: #f1c40f; --danger: #d63031; --neon-pink: #e84393; }
-        
         body { 
             font-family: "Microsoft JhengHei", sans-serif; margin: 0; display: flex; flex-direction: column; align-items: center; padding: 10px; color: white; min-height: 100vh;
-            /* 背景圖設定：確保它是底層，不影響操作 */
-            background-image: url('background.png'); 
-            background-size: cover; background-position: center; background-attachment: fixed; background-repeat: no-repeat; background-color: #000;
+            background-image: url('background.png'); background-size: cover; background-position: center; background-attachment: fixed; background-repeat: no-repeat; background-color: #000;
         }
-
-        /* 毛玻璃面板：層級設定為 100 */
-        .glass-panel { position: relative; z-index: 100; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(10px); border-radius: 20px; border: 1px solid rgba(255,255,255,0.2); padding: 15px; width: 92%; max-width: 400px; text-align: center; margin-top: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .glass-panel { position: relative; z-index: 100; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(10px); border-radius: 20px; border: 1px solid rgba(255,255,255,0.2); padding: 15px; width: 92%; max-width: 400px; text-align: center; margin-top: 10px; }
         .title-neon { font-size: 1.8rem; color: #fff; text-shadow: 0 0 15px var(--primary); animation: glow 2s infinite alternate; }
         @keyframes glow { from { text-shadow: 0 0 10px var(--primary); } to { text-shadow: 0 0 30px var(--primary); } }
-
-        /* 房間清單 */
+        
         .room-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 15px; }
         .room-btn { padding: 12px 5px; border-radius: 12px; cursor: pointer; font-weight: bold; background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2); transition: 0.3s; }
         .room-btn span { display: block; font-size: 0.7rem; color: var(--gold); }
-        .room-btn.has-people { border-color: var(--gold); background: rgba(241,196,15,0.1); }
-        .room-btn.full { background: #d63031 !important; cursor: not-allowed; opacity: 0.7; }
-
-        /* 遊戲棋盤 */
+        .room-btn.full { background: #d63031 !important; opacity: 0.7; }
+        
         #game-screen { display: none; width: 100%; flex-direction: column; align-items: center; z-index: 100; }
         .floor-row { display: flex; align-items: center; padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.1); width: 100%; }
         .floor-label { width: 45px; font-weight: bold; color: var(--gold); font-size: 0.9rem; }
         .tiles { display: flex; gap: 8px; flex: 1; justify-content: space-around; }
         .tile { width: 48px; height: 48px; border: 1px solid rgba(255,255,255,0.3); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; font-weight: bold; cursor: pointer; background: rgba(255,255,255,0.1); }
 
-        /* 音樂控制項：層級設定為 10000 絕對置頂 */
+        /* 音樂控制項 */
         #youtube-player { display: none; }
         .music-group { position: fixed; bottom: 30px; right: 20px; display: flex; gap: 15px; z-index: 10000; }
         .m-btn { width: 65px; height: 65px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 3px solid white; font-size: 28px; box-shadow: 0 4px 15px rgba(0,0,0,0.8); transition: 0.2s; }
         #music-toggle { background: linear-gradient(135deg, #6c5ce7, #a29bfe); }
-        #music-next { background: linear-gradient(135deg, var(--neon-pink), #fd79a8); font-size: 22px; display: none; }
-        .playing { animation: rotate 3s linear infinite; box-shadow: 0 0 25px var(--neon-pink) !important; }
+        #music-next { background: linear-gradient(135deg, #e84393, #fd79a8); font-size: 22px; display: none; }
+        .playing { animation: rotate 3s linear infinite; box-shadow: 0 0 25px #e84393 !important; }
         @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-
         #reset-overlay { display: none; position: fixed; top: 20px; background: var(--danger); color: white; padding: 10px 25px; border-radius: 50px; font-weight: bold; z-index: 50000; border: 2px solid white; }
     </style>
 </head>
@@ -52,27 +43,25 @@
     
     <div class="music-group">
         <div id="music-toggle" class="m-btn" onclick="togglePlay()">🎵</div>
-        <div id="music-next" class="m-btn" onclick="nextTrack()">⏭️</div>
+        <div id="music-next" class="m-btn" onclick="nextShuffle()">🔀</div>
     </div>
 
     <div id="reset-overlay">🚨 重置倒數中：<span id="timer-sec">60</span>s</div>
 
     <div id="room-selector" class="glass-panel">
         <h1 class="title-neon">楓之谷男模會館</h1>
-        <div style="color:var(--gold); font-size:0.8rem; font-weight:bold; letter-spacing: 2px;">CREATOR: 小帥</div>
+        <div style="color:var(--gold); font-size:0.8rem; font-weight:bold;">CREATOR: 小帥</div>
         <div class="room-grid" id="room-buttons"></div>
     </div>
 
     <div id="game-screen">
         <div class="glass-panel" style="margin-bottom:10px; position:relative;">
-            <button onclick="location.reload()" style="position:absolute; left:10px; top:10px; background:rgba(255,255,255,0.2); border:1px solid #fff; color:white; border-radius:5px; padding:3px 8px; font-size: 10px; cursor: pointer;">離開</button>
+            <button onclick="location.reload()" style="position:absolute; left:10px; top:10px; background:rgba(255,255,255,0.2); border:1px solid #fff; color:white; border-radius:5px; padding:3px 8px; font-size: 10px;">離開</button>
             <div id="room-display" style="color:var(--gold); font-weight:bold; font-size: 1.2rem;"></div>
-            <div id="my-status" style="margin-top:5px; display:inline-block; padding:5px 15px; border-radius:15px; border:1px solid #fff; font-weight:bold; font-size: 0.9rem;">正在連線...</div>
-            <button id="reset-btn" onclick="handleReset()" style="background:rgba(214,48,49,0.3); border:1px solid var(--danger); color:#ff7675; padding:8px; border-radius:8px; width:100%; margin-top:10px; font-weight:bold; cursor: pointer;">清空包廂</button>
+            <div id="my-status" style="margin-top:5px; display:inline-block; padding:5px 15px; border-radius:15px; border:1px solid #fff; font-weight:bold;">連線中...</div>
+            <button id="reset-btn" onclick="handleReset()" style="background:rgba(214,48,49,0.3); border:1px solid var(--danger); color:#ff7675; padding:8px; border-radius:8px; width:100%; margin-top:10px; font-weight:bold;">清空包廂</button>
         </div>
-        <div class="glass-panel" style="padding: 10px;">
-            <div id="board" style="display:flex; flex-direction:column-reverse;"></div>
-        </div>
+        <div class="glass-panel" style="padding: 10px;"><div id="board" style="display:flex; flex-direction:column-reverse;"></div></div>
     </div>
 
     <script src="https://www.youtube.com/iframe_api"></script>
@@ -81,20 +70,22 @@
         const roomNames = ["燈紅酒綠", "酒池肉林", "紙醉金迷", "花天酒地", "歌舞昇平", "醉生夢死", "春宵苦短", "露水姻緣", "活色生香", "翻雲覆雨"];
         let myColor = '', currentRoomId = null;
 
-        // --- 音樂核心邏輯 (強化切歌穩定度) ---
-        let player, isPlaying = false, currentTrack = 0;
-        // 播放清單：大展鴻圖, 辣台妹, Without You, 迷途羔羊, 變色龍, 嘻哈庄腳情
-        const playlist = ['yupEwQ6qCd0', '4Gv_hF7UuO8', 'hCh8H60UshM', 'z_D8S6WkFfM', 'p_p6_qjL7yM', 'r6S_9unvV6M'];
-        let forcePlayInterval = null;
+        // --- 指定播放清單隨機播放邏輯 ---
+        let player, isPlaying = false;
+        const TARGET_PLAYLIST_ID = 'PLJq5gWE5PzSq5DkhVJle8zfz3wMCfvOC0';
 
         function onYouTubeIframeAPIReady() {
             player = new YT.Player('youtube-player', {
-                height: '0', width: '0', videoId: playlist[currentTrack],
-                playerVars: { 'autoplay': 0, 'controls': 0, 'rel': 0, 'enablejsapi': 1 },
+                height: '0', width: '0',
+                playerVars: { 
+                    'listType': 'playlist',
+                    'list': TARGET_PLAYLIST_ID, // 載入你提供的清單
+                    'enablejsapi': 1,
+                    'origin': window.location.origin
+                },
                 events: { 
-                    'onStateChange': (e) => { 
-                        // 自動下一首
-                        if(e.data === YT.PlayerState.ENDED) nextTrack(); 
+                    'onReady': (e) => {
+                        e.target.setShuffle(true); // 開啟隨機模式
                     }
                 }
             });
@@ -112,38 +103,19 @@
                 player.pauseVideo();
                 tBtn.classList.remove('playing'); tBtn.innerText = '🎵';
                 nBtn.style.display = 'none'; isPlaying = false;
-                if(forcePlayInterval) clearInterval(forcePlayInterval);
             }
         }
 
-        function nextTrack() {
+        function nextShuffle() {
             if (!player || !isPlaying) return;
-            currentTrack = (currentTrack + 1) % playlist.length;
+            player.nextVideo(); // 跳到清單中的下一首隨機歌曲
             
-            // 步驟 1: 停止當前影片
-            player.stopVideo();
-            
-            // 步驟 2: 載入下一首 ID
-            player.loadVideoById(playlist[currentTrack]);
-            
-            // 步驟 3: 開啟強制檢查迴圈，直到影片狀態變為 1 (Playing)
-            if(forcePlayInterval) clearInterval(forcePlayInterval);
-            forcePlayInterval = setInterval(() => {
-                const state = player.getPlayerState();
-                if (state !== 1) {
-                    player.playVideo();
-                } else {
-                    clearInterval(forcePlayInterval);
-                }
-            }, 500);
-
-            // 按鈕點擊動畫
             const nBtn = document.getElementById('music-next');
-            nBtn.style.transform = "scale(0.8)";
-            setTimeout(() => nBtn.style.transform = "scale(1)", 100);
+            nBtn.style.transform = "rotate(360deg)";
+            setTimeout(() => nBtn.style.transform = "rotate(0deg)", 300);
         }
 
-        // --- 房間管理 ---
+        // --- 房間管理與同步 (維持原有穩定邏輯) ---
         socket.on('roomCountsUpdate', (counts) => {
             const grid = document.getElementById('room-buttons'); grid.innerHTML = '';
             roomNames.forEach((name, i) => {
@@ -151,7 +123,7 @@
                 const btn = document.createElement('button');
                 btn.className = 'room-btn' + (count >= 4 ? ' full' : (count > 0 ? ' has-people' : ''));
                 btn.innerHTML = `<span>VIP ROOM ${rid}</span>${name}<br><small>👤 ${count}/4</small>`;
-                btn.onclick = () => { if (count >= 4) return alert('此包廂客滿中！'); socket.emit('joinRoom', rid); };
+                btn.onclick = () => { if (count >= 4) return alert('客滿！'); socket.emit('joinRoom', rid); };
                 grid.appendChild(btn);
             });
         });
@@ -161,13 +133,10 @@
             document.getElementById('room-selector').style.display = 'none';
             document.getElementById('game-screen').style.display = 'flex';
             document.getElementById('room-display').innerText = `🍷 ${roomNames[currentRoomId-1]}`;
-            const s = document.getElementById('my-status'); 
-            s.style.backgroundColor = myColor; 
-            s.innerText = `我的顏色`;
+            const s = document.getElementById('my-status'); s.style.backgroundColor = myColor; s.innerText = `我的顏色`;
             renderSync(data.state);
         });
 
-        // 建立 10x4 棋盤
         const board = document.getElementById('board');
         for (let f = 1; f <= 10; f++) {
             const row = document.createElement('div'); row.className = 'floor-row';
@@ -181,10 +150,9 @@
             row.appendChild(ts); board.appendChild(row);
         }
 
-        function handleReset() { if (confirm('啟動 60 秒重置倒數？')) socket.emit('requestReset'); }
+        function handleReset() { if (confirm('重置包廂？')) socket.emit('requestReset'); }
         socket.on('resetCounting', (sec) => { document.getElementById('reset-overlay').style.display = 'block'; document.getElementById('timer-sec').innerText = sec; });
         socket.on('resetFinished', () => { document.getElementById('reset-overlay').style.display = 'none'; });
-
         function renderSync(state) {
             document.querySelectorAll('.tile').forEach(el => { el.style.backgroundColor = 'rgba(255,255,255,0.1)'; el.style.borderColor = 'rgba(255,255,255,0.3)'; });
             for (let k in state) { const el = document.getElementById(k); if (el) { el.style.backgroundColor = state[k]; el.style.borderColor = state[k]; } }
