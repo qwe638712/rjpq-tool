@@ -14,30 +14,28 @@
             background-size: cover; background-position: center; background-attachment: fixed; background-repeat: no-repeat; background-color: #000;
         }
 
+        /* 確保介面板塊 z-index 高於背景 */
         .glass-panel { position: relative; z-index: 100; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(10px); border-radius: 20px; border: 1px solid rgba(255,255,255,0.2); padding: 15px; width: 92%; max-width: 400px; text-align: center; margin-top: 10px; }
         .title-neon { font-size: 1.8rem; color: #fff; text-shadow: 0 0 15px var(--primary); animation: glow 2s infinite alternate; }
         @keyframes glow { from { text-shadow: 0 0 10px var(--primary); } to { text-shadow: 0 0 30px var(--primary); } }
 
-        /* 房間管理 */
         .room-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 15px; }
         .room-btn { padding: 12px 5px; border-radius: 12px; cursor: pointer; font-weight: bold; background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2); transition: 0.3s; }
         .room-btn span { display: block; font-size: 0.7rem; color: var(--gold); }
-        .room-btn.has-people { border-color: var(--gold); background: rgba(241,196,15,0.1); }
         .room-btn.full { background: #d63031 !important; cursor: not-allowed; opacity: 0.7; }
 
-        /* 棋盤 */
-        #game-screen { display: none; width: 100%; flex-direction: column; align-items: center; z-index: 100; position: relative; }
+        #game-screen { display: none; width: 100%; flex-direction: column; align-items: center; z-index: 100; }
         .floor-row { display: flex; align-items: center; padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.1); width: 100%; }
         .floor-label { width: 45px; font-weight: bold; color: var(--gold); font-size: 0.9rem; }
         .tiles { display: flex; gap: 8px; flex: 1; justify-content: space-around; }
         .tile { width: 48px; height: 48px; border: 1px solid rgba(255,255,255,0.3); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; font-weight: bold; cursor: pointer; background: rgba(255,255,255,0.1); }
 
-        /* 音樂控制項 */
+        /* 音樂控制按鈕置頂 */
         #youtube-player { display: none; }
-        .music-group { position: fixed; bottom: 30px; right: 20px; display: flex; gap: 12px; z-index: 10000; }
-        .m-btn { width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 3px solid white; font-size: 26px; box-shadow: 0 4px 15px rgba(0,0,0,0.6); transition: 0.2s; }
+        .music-group { position: fixed; bottom: 30px; right: 20px; display: flex; gap: 15px; z-index: 10000; }
+        .m-btn { width: 65px; height: 65px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 3px solid white; font-size: 28px; box-shadow: 0 4px 15px rgba(0,0,0,0.8); transition: 0.2s; }
         #music-toggle { background: linear-gradient(135deg, #6c5ce7, #a29bfe); }
-        #music-next { background: linear-gradient(135deg, var(--neon-pink), #fd79a8); font-size: 20px; display: none; }
+        #music-next { background: linear-gradient(135deg, var(--neon-pink), #fd79a8); font-size: 22px; display: none; }
         .playing { animation: rotate 3s linear infinite; box-shadow: 0 0 25px var(--neon-pink) !important; }
         @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
@@ -86,14 +84,16 @@
         function onYouTubeIframeAPIReady() {
             player = new YT.Player('youtube-player', {
                 height: '0', width: '0', videoId: playlist[currentTrack],
-                playerVars: { 'autoplay': 0, 'controls': 0, 'rel': 0 },
+                playerVars: { 'autoplay': 0, 'controls': 0, 'rel': 0, 'origin': window.location.origin },
                 events: { 
+                    'onReady': () => { console.log("Player Ready"); },
                     'onStateChange': (e) => { if(e.data === YT.PlayerState.ENDED) nextTrack(); }
                 }
             });
         }
 
         function togglePlay() {
+            if (!player) return;
             const tBtn = document.getElementById('music-toggle');
             const nBtn = document.getElementById('music-next');
             if (!isPlaying) {
@@ -108,18 +108,28 @@
         }
 
         function nextTrack() {
-            if (!isPlaying) return;
+            if (!player || !isPlaying) return;
             currentTrack = (currentTrack + 1) % playlist.length;
-            // 重要：使用 loadVideoById 並緊接 playVideo() 確保觸發播放
-            player.loadVideoById(playlist[currentTrack]);
-            setTimeout(() => { player.playVideo(); }, 300); 
             
+            // 重要：先暫停再載入，並強制調用播放指令
+            player.stopVideo();
+            player.loadVideoById(playlist[currentTrack]);
+            
+            // 使用循環檢查播放器狀態，直到成功播放為止
+            let checkStart = setInterval(() => {
+                player.playVideo();
+                if (player.getPlayerState() === 1) { // 1 代表正在播放
+                    clearInterval(checkStart);
+                }
+            }, 500);
+
+            // 按鈕點擊反饋
             const nBtn = document.getElementById('music-next');
             nBtn.style.transform = "scale(0.8)";
             setTimeout(() => nBtn.style.transform = "scale(1)", 100);
         }
 
-        // --- 房間管理 ---
+        // --- 房間管理與同步 ---
         socket.on('roomCountsUpdate', (counts) => {
             const grid = document.getElementById('room-buttons'); grid.innerHTML = '';
             roomNames.forEach((name, i) => {
@@ -127,7 +137,7 @@
                 const btn = document.createElement('button');
                 btn.className = 'room-btn' + (count >= 4 ? ' full' : (count > 0 ? ' has-people' : ''));
                 btn.innerHTML = `<span>VIP ROOM ${rid}</span>${name}<br><small>👤 ${count}/4</small>`;
-                btn.onclick = () => { if (count >= 4) return alert('包廂客滿囉！'); socket.emit('joinRoom', rid); };
+                btn.onclick = () => { if (count >= 4) return alert('此包廂已滿！'); socket.emit('joinRoom', rid); };
                 grid.appendChild(btn);
             });
         });
@@ -137,7 +147,7 @@
             document.getElementById('room-selector').style.display = 'none';
             document.getElementById('game-screen').style.display = 'flex';
             document.getElementById('room-display').innerText = `🍷 ${roomNames[currentRoomId-1]}`;
-            const s = document.getElementById('my-status'); s.style.backgroundColor = myColor; s.innerText = `我的顏色`;
+            const s = document.getElementById('my-status'); s.style.backgroundColor = myColor; s.innerText = `我的專屬顏色`;
             renderSync(data.state);
         });
 
@@ -154,7 +164,7 @@
             row.appendChild(ts); board.appendChild(row);
         }
 
-        function handleReset() { if (confirm('啟動重置倒數？')) socket.emit('requestReset'); }
+        function handleReset() { if (confirm('要啟動重置倒數嗎？')) socket.emit('requestReset'); }
         socket.on('resetCounting', (sec) => { document.getElementById('reset-overlay').style.display = 'block'; document.getElementById('timer-sec').innerText = sec; });
         socket.on('resetFinished', () => { document.getElementById('reset-overlay').style.display = 'none'; });
 
