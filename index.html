@@ -11,42 +11,38 @@
             font-family: "Microsoft JhengHei", sans-serif; margin: 0; display: flex; flex-direction: column; align-items: center; padding: 10px; color: white; min-height: 100vh;
             background-image: url('background.png'); background-size: cover; background-position: center; background-attachment: fixed; overflow-x: hidden;
         }
-        .glass-panel { background: rgba(0, 0, 0, 0.78); backdrop-filter: blur(15px); border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.8); border: 1px solid rgba(255,255,255,0.15); padding: 15px; width: 92%; max-width: 400px; text-align: center; margin-top: 10px; }
-        
-        /* 標題霓虹燈 */
-        .title-neon { font-size: 1.8rem; margin: 0; color: #fff; text-shadow: 0 0 10px var(--primary), 0 0 20px var(--primary); animation: glow 2s infinite alternate; }
-        @keyframes glow { from { text-shadow: 0 0 10px var(--primary); } to { text-shadow: 0 0 25px #e0aaff, 0 0 35px var(--primary); } }
+        .glass-panel { background: rgba(0, 0, 0, 0.82); backdrop-filter: blur(15px); border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.8); border: 1px solid rgba(255,255,255,0.15); padding: 15px; width: 92%; max-width: 400px; text-align: center; margin-top: 10px; }
+        .title-neon { font-size: 1.8rem; color: #fff; text-shadow: 0 0 15px var(--primary); animation: glow 2s infinite alternate; }
+        @keyframes glow { from { text-shadow: 0 0 10px var(--primary); } to { text-shadow: 0 0 30px var(--primary); } }
 
-        /* 房間列表 */
+        /* 房間清單 */
         .room-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 15px; }
-        .room-btn { padding: 15px 5px; border-radius: 12px; cursor: pointer; font-weight: bold; background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2); transition: 0.3s; }
+        .room-btn { padding: 15px 5px; border-radius: 12px; cursor: pointer; font-weight: bold; background: rgba(255,255,255,0.05); color: white; border: 1px solid rgba(255,255,255,0.2); transition: 0.3s; }
         .room-btn span { display: block; font-size: 0.7rem; color: var(--gold); margin-bottom: 3px; }
-        .room-btn .count-badge { font-size: 0.65rem; background: rgba(0,0,0,0.5); border-radius: 10px; margin-top: 5px; display: inline-block; padding: 2px 8px; }
-        .room-btn.has-people { border-color: var(--gold); box-shadow: 0 0 15px rgba(241,196,15,0.4); }
+        .room-btn.has-people { border-color: var(--gold); box-shadow: 0 0 15px rgba(241,196,15,0.3); }
         .room-btn.full { background: linear-gradient(145deg, #d63031, #8b0000) !important; border-color: #ff7675 !important; cursor: not-allowed; }
 
-        /* 同步棋盤 */
+        /* 遊戲介面 */
         #game-screen { display: none; width: 100%; flex-direction: column; align-items: center; }
-        #my-status { display: inline-block; padding: 8px 25px; border-radius: 20px; font-weight: bold; margin-bottom: 10px; border: 2px solid rgba(255,255,255,0.4); box-shadow: 0 0 10px rgba(0,0,0,0.5); }
+        #my-status { display: inline-block; padding: 8px 25px; border-radius: 20px; font-weight: bold; margin-bottom: 10px; border: 2px solid rgba(255,255,255,0.4); }
         .floor-row { display: flex; align-items: center; padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.1); width: 100%; }
-        .floor-label { width: 45px; font-weight: bold; color: var(--gold); font-size: 0.9rem; }
+        .floor-label { width: 45px; font-weight: bold; color: var(--gold); }
         .tiles { display: flex; gap: 8px; flex: 1; justify-content: space-around; }
         .tile { width: 50px; height: 50px; border: 1px solid rgba(255,255,255,0.2); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; font-weight: bold; cursor: pointer; background: rgba(255,255,255,0.08); }
 
-        /* 音樂控制 */
+        /* 音樂鈕 (單擊換歌 / 雙擊關閉) */
         #youtube-player { display: none; }
-        #music-ctrl { position: fixed; bottom: 25px; right: 25px; width: 60px; height: 60px; background: linear-gradient(135deg, #6c5ce7, #a29bfe); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 5000; border: 2px solid white; font-size: 26px; box-shadow: 0 0 20px rgba(108, 92, 231, 0.6); }
+        #music-ctrl { position: fixed; bottom: 25px; right: 25px; width: 65px; height: 65px; background: linear-gradient(135deg, #6c5ce7, #e84393); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 9999; border: 3px solid white; font-size: 28px; box-shadow: 0 0 20px rgba(108, 92, 231, 0.6); transition: transform 0.1s; }
         .playing { animation: rotate-glow 2s linear infinite; }
-        @keyframes rotate-glow { 0% { transform: rotate(0deg) scale(1); } 50% { transform: rotate(180deg) scale(1.1); } 100% { transform: rotate(360deg) scale(1); } }
+        @keyframes rotate-glow { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        #reset-overlay { display: none; position: fixed; top: 20px; background: var(--danger); color: white; padding: 12px 30px; border-radius: 50px; font-weight: bold; z-index: 4000; }
+        #reset-overlay { display: none; position: fixed; top: 20px; background: var(--danger); color: white; padding: 12px 30px; border-radius: 50px; font-weight: bold; z-index: 5000; }
     </style>
 </head>
 <body>
 
     <div id="youtube-player"></div>
-    <div id="music-ctrl" onclick="toggleYT()">🎵</div>
-
+    <div id="music-ctrl" onclick="handleMusicClick()">🎵</div>
     <div id="reset-overlay">🚨 包廂清空倒數：<span id="timer-sec">60</span>s</div>
 
     <div id="room-selector" class="glass-panel">
@@ -56,9 +52,9 @@
     </div>
 
     <div id="game-screen">
-        <div class="glass-panel" style="margin-bottom:15px; position:relative;">
+        <div class="glass-panel" style="margin-bottom:10px; position:relative;">
             <button onclick="location.reload()" style="position:absolute; left:10px; top:10px; background:rgba(0,0,0,0.4); border:1px solid #777; color:white; border-radius:5px; padding:3px 8px;">離開</button>
-            <div id="room-display" style="color:var(--gold); font-weight:bold; margin-bottom:5px;"></div>
+            <div id="room-display" style="color:var(--gold); font-weight:bold;"></div>
             <div id="my-status">連線中...</div>
             <button id="reset-btn" onclick="handleReset()" style="background:rgba(214,48,49,0.2); border:1px solid var(--danger); color:#ff7675; padding:5px 15px; border-radius:5px; cursor:pointer; width:100%;">清空包廂</button>
         </div>
@@ -73,37 +69,47 @@
         const roomNames = ["燈紅酒綠", "酒池肉林", "紙醉金迷", "花天酒地", "歌舞昇平", "醉生夢死", "春宵苦短", "露水姻緣", "活色生香", "翻雲覆雨"];
         let myColor = '', currentRoomId = null, isCounting = false;
 
-        // YouTube 播放清單
+        // --- 音樂播放系統 ---
         let player, isPlaying = false, currentTrack = 0;
         const playlist = ['yupEwQ6qCd0', '4Gv_hF7UuO8', 'hCh8H60UshM', 'z_D8S6WkFfM', 'p_p6_qjL7yM', 'r6S_9unvV6M'];
-
+        
         function onYouTubeIframeAPIReady() {
             player = new YT.Player('youtube-player', {
                 height: '0', width: '0', videoId: playlist[currentTrack],
+                playerVars: { 'autoplay': 0, 'controls': 0 },
                 events: { 'onStateChange': (e) => { if(e.data === YT.PlayerState.ENDED) nextTrack(); } }
             });
         }
 
-        function toggleYT() {
-            const btn = document.getElementById('music-ctrl');
-            if (!isPlaying) {
-                player.playVideo(); btn.classList.add('playing'); btn.innerText = '📀'; isPlaying = true;
-            } else { nextTrack(); }
+        let clickTimer = null;
+        function handleMusicClick() {
+            if (clickTimer == null) {
+                clickTimer = setTimeout(() => {
+                    // 單擊：播放或切換下一首
+                    const btn = document.getElementById('music-ctrl');
+                    if (!isPlaying) {
+                        player.playVideo(); btn.classList.add('playing'); btn.innerText = '💿'; isPlaying = true;
+                    } else { nextTrack(); }
+                    clickTimer = null;
+                }, 300);
+            }
         }
+
+        // 雙擊：關閉音樂
+        document.getElementById('music-ctrl').addEventListener('dblclick', (e) => {
+            clearTimeout(clickTimer); clickTimer = null;
+            player.pauseVideo(); isPlaying = false;
+            const btn = document.getElementById('music-ctrl');
+            btn.classList.remove('playing'); btn.innerText = '🎵';
+        });
 
         function nextTrack() {
             currentTrack = (currentTrack + 1) % playlist.length;
             player.loadVideoById(playlist[currentTrack]);
+            console.log("切換歌單：" + (currentTrack + 1));
         }
 
-        // 雙擊關閉音樂
-        document.getElementById('music-ctrl').addEventListener('dblclick', () => {
-            player.pauseVideo(); isPlaying = false;
-            document.getElementById('music-ctrl').classList.remove('playing');
-            document.getElementById('music-ctrl').innerText = '🎵';
-        });
-
-        // 房間狀態與生成
+        // --- 房間管理 ---
         socket.on('roomCountsUpdate', (counts) => {
             const grid = document.getElementById('room-buttons'); grid.innerHTML = '';
             roomNames.forEach((name, i) => {
@@ -111,7 +117,7 @@
                 const btn = document.createElement('button');
                 btn.className = 'room-btn' + (count >= 4 ? ' full' : (count > 0 ? ' has-people' : ''));
                 btn.innerHTML = `<span>VIP ROOM ${rid}</span>${name}<br><div class="count-badge">👤 ${count}/4</div>`;
-                btn.onclick = () => { if (count >= 4) return alert('包廂客滿！'); socket.emit('joinRoom', rid); };
+                btn.onclick = () => { if (count >= 4) return alert('此包廂已客滿！'); socket.emit('joinRoom', rid); };
                 grid.appendChild(btn);
             });
         });
@@ -120,11 +126,12 @@
             currentRoomId = data.roomId; myColor = data.myColor;
             document.getElementById('room-selector').style.display = 'none';
             document.getElementById('game-screen').style.display = 'flex';
-            document.getElementById('room-display').innerText = `🍷 當前：${roomNames[currentRoomId-1]}`;
-            const s = document.getElementById('my-status'); s.style.backgroundColor = myColor; s.innerText = `我的坐檯顏色`;
+            document.getElementById('room-display').innerText = `🍷 ${roomNames[currentRoomId-1]}`;
+            const s = document.getElementById('my-status'); s.style.backgroundColor = myColor; s.innerText = `我的顏色`;
             renderSync(data.state);
         });
 
+        // 生成棋盤
         const board = document.getElementById('board');
         for (let f = 1; f <= 10; f++) {
             const row = document.createElement('div'); row.className = 'floor-row';
@@ -138,19 +145,9 @@
             row.appendChild(ts); board.appendChild(row);
         }
 
-        function handleReset() {
-            if (confirm(isCounting ? '立即清空？' : '啟動 60 秒倒數？')) socket.emit('requestReset');
-        }
-
-        socket.on('resetCounting', (sec) => {
-            isCounting = true; document.getElementById('reset-overlay').style.display = 'block';
-            document.getElementById('timer-sec').innerText = sec; document.getElementById('reset-btn').innerText = '🔥 立即清空';
-        });
-
-        socket.on('resetFinished', () => {
-            isCounting = false; document.getElementById('reset-overlay').style.display = 'none';
-            document.getElementById('reset-btn').innerText = '清空包廂';
-        });
+        function handleReset() { if (confirm(isCounting ? '立即清空？' : '發起 60 秒倒數？')) socket.emit('requestReset'); }
+        socket.on('resetCounting', (sec) => { isCounting = true; document.getElementById('reset-overlay').style.display = 'block'; document.getElementById('timer-sec').innerText = sec; document.getElementById('reset-btn').innerText = '🔥 立即清空'; });
+        socket.on('resetFinished', () => { isCounting = false; document.getElementById('reset-overlay').style.display = 'none'; document.getElementById('reset-btn').innerText = '清空包廂'; });
 
         function renderSync(state) {
             document.querySelectorAll('.tile').forEach(el => { el.style.backgroundColor = 'rgba(255,255,255,0.08)'; el.style.borderColor = 'rgba(255,255,255,0.2)'; });
